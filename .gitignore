@@ -1,0 +1,15 @@
+# Ignorer les fichiers compilés
+*.o
+*.out
+*.class
+
+# Ignorer les dossiers système et IDE
+.DS_Store
+node_modules/
+.vscode/
+.idea/
+
+# Ignorer les fichiers de configuration
+.venv/
+.env
+config/*.json
