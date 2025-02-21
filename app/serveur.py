@@ -1,60 +1,53 @@
 import asyncio
 import websockets
 import json
+from chiffrement import *
 
 clients = {}  # Utilisation d'un dictionnaire pour stocker les clients
 
-def vigenere_encrypt(plaintext, key):
-    encrypted_text = []
-    key_length = len(key)
-    key_as_int = [ord(i) for i in key]
-    plaintext_int = [ord(i) for i in plaintext]
-    for i in range(len(plaintext_int)):
-        value = (plaintext_int[i] + key_as_int[i % key_length]) % 26
-        encrypted_text.append(chr(value + 65))
-    return ''.join(encrypted_text)
 
 async def handle_client(websocket):
     # Recevoir le nom d'utilisateur et l'ajouter au dictionnaire avec le WebSocket comme valeur
-    username = await websocket.recv()
-    login_data = json.loads(username)
-    username = login_data["username"]
+    username_data = await websocket.recv()
+    decrypted_username = decrypt_dict(username_data, "clé")  # Déchiffrer le nom d'utilisateur
+    username = decrypted_username["username"]
     clients[username] = websocket  # Ajouter le client avec son nom d'utilisateur comme clé
     print(f"({username}) s'est connecté")
 
     # Demander au client de choisir une option
-    message = await websocket.recv()
-    choix_user_menu = json.loads(message)
+    choix_menu_encrypted = await websocket.recv()
+    choix_user_menu = decrypt_dict(choix_menu_encrypted, "clé")  # Déchiffrer le choix du menu
     if choix_user_menu["type"] == "liste_destinataires":
         liste_destinataires = [{"username": client} for client in clients if client != username]  # Liste des autres clients
-        data = {"type": "liste_destinataires", "liste_destinataires": liste_destinataires}
-        await websocket.send(json.dumps(data))
+        data_clair = {"type": "liste_destinataires", "liste_destinataires": liste_destinataires}
+        data_chiffre = encrypt_dict(data_clair, "clé")  # Chiffrer la liste des destinataires
+        await websocket.send(data_chiffre)
 
     try:
         async for message in websocket:
-            
-            data = json.loads(message)
-            if data["type"] == "ready":
+            data_encrypted = message
+            data_decrypted = decrypt_dict(data_encrypted, "clé")  # Déchiffrer le message
+            if data_decrypted["type"] == "ready":
                 print(f"{username} est prêt")
                 continue
-            
-            print(data)
-            
-            if data["type"] == "message_prive":
+                        
+            if data_decrypted["type"] == "message_prive":
 
-                encrypted_data = vigenere_encrypt(data, "clé")  # Chiffrer le message
-                print(f"Message reçu de {username}: {message}")
+                print(f"Message reçu de {username}: {data_decrypted['message']}")
 
-                destinataire = data["destinataire"]
+                destinataire = data_decrypted["destinataire"]
                 if destinataire in clients:
-                    data = {"type": "message_prive", "expediteur": username, "message": data["message"]}
-                    await clients[destinataire].send(json.dumps(encrypted_data))
+                    data_clair = {"type": "message_prive", "expediteur": username, "message": data_decrypted["message"]}
+                    data_chiffre = encrypt_dict(data_clair, "clé")  # Chiffrer le message
+                    await clients[destinataire].send(json.dumps(data_chiffre))
                 else:
-                    error = {"type": "erreur", "message": f"Destinataire {data['destinataire']} non trouvé."}
-                    await websocket.send(json.dumps(error))
+                    erreur = {"type": "erreur", "message": f"Destinataire {data_decrypted['destinataire']} non trouvé."}
+                    data_chiffre = encrypt_dict(erreur, "clé")  # Chiffrer le message d'erreur
+                    await websocket.send(json.dumps(data_chiffre))
             else:
-                error = {"type": "erreur", "message": "Commande inconnue."}
-                await websocket.send(json.dumps(error))
+                erreur = {"type": "erreur", "message": "Commande inconnue."}
+                data_chiffre = encrypt_dict(erreur, "clé")
+                await websocket.send(json.dumps(data_chiffre))
     except websockets.exceptions.ConnectionClosed:
         print(f"{username} s'est déconnecté")
     finally:
