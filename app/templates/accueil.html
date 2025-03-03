@@ -3,20 +3,139 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat en temps réel</title>
-    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-    <link rel="stylesheet" href="static/accueil.css">
+    <title>Chat Privé</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            display: flex;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 600px;
+            height: 400px;
+        }
+        .sidebar {
+            width: 200px;
+            border-right: 1px solid #ccc;
+            padding: 20px;
+        }
+        .chat {
+            flex-grow: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        .chat h1 {
+            margin-bottom: 20px;
+        }
+        .login-form, .message-form {
+            display: flex;
+            flex-direction: column;
+        }
+        .login-form input, .message-form input, .message-form textarea {
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .login-form button, .message-form button {
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            background-color: #007bff;
+            color: #fff;
+            cursor: pointer;
+        }
+        .login-form button:hover, .message-form button:hover {
+            background-color: #0056b3;
+        }
+        .user-list, .messages {
+            margin-top: 20px;
+        }
+        .messages {
+            flex-grow: 1;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 4px;
+        }
+    </style>
 </head>
 <body>
-    <h2>Messagerie en temps réel</h2>
-    <input type="text" id="username" placeholder="Entrez votre pseudo">
-    <button onclick="login()">Se connecter</button>
-    <div id="chatbox" style="display:none;">
-        <select id="usersList"></select>
-        <input type="text" id="message" placeholder="Écrire un message">
-        <button onclick="sendMessage()">Envoyer</button>
-        <ul id="messages"></ul>
+    <div class="container">
+        <div class="sidebar">
+            <h3>Utilisateurs connectés</h3>
+            <ul id="user-list"></ul>
+        </div>
+        <div class="chat">
+            <h1>Chat Privé</h1>
+            <div class="login-form">
+                <input type="text" id="username" placeholder="Nom d'utilisateur">
+                <button onclick="login()">Se connecter</button>
+            </div>
+            <div class="message-form" style="display: none;">
+                <input type="text" id="recipient" placeholder="Destinataire">
+                <textarea id="message" placeholder="Votre message"></textarea>
+                <button onclick="sendMessage()">Envoyer</button>
+            </div>
+            <div class="messages">
+                <h3>Messages</h3>
+                <ul id="messages"></ul>
+            </div>
+        </div>
     </div>
-    <script src="static/js/script.js"></script>
+
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script>
+        const socket = io.connect('http://127.0.0.1:5000');
+
+        socket.on('connect', () => {
+            console.log('Connecté au serveur');
+        });
+
+        socket.on('liste_utilisateurs', (users) => {
+            const userList = document.getElementById('user-list');
+            userList.innerHTML = '';
+            users.forEach(user => {
+                const li = document.createElement('li');
+                li.textContent = user;
+                userList.appendChild(li);
+            });
+        });
+
+        socket.on('message_recu', (data) => {
+            const messages = document.getElementById('messages');
+            const li = document.createElement('li');
+            li.textContent = `${data.expediteur}: ${data.message}`;
+            messages.appendChild(li);
+        });
+
+        socket.on('erreur', (data) => {
+            alert(data.message);
+        });
+
+        function login() {
+            const username = document.getElementById('username').value;
+            socket.emit('login', { username });
+            document.querySelector('.login-form').style.display = 'none';
+            document.querySelector('.message-form').style.display = 'block';
+        }
+
+        function sendMessage() {
+            const recipient = document.getElementById('recipient').value;
+            const message = document.getElementById('message').value;
+            const sender = document.getElementById('username').value;
+            socket.emit('message_prive', { expediteur: sender, destinataire: recipient, message });
+        }
+    </script>
 </body>
 </html>
