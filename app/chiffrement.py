@@ -2,6 +2,7 @@ import json
 import base64
 
 
+
 def vigenere_encrypt(plaintext, key):
     """Chiffre une chaîne de caractères avec Vigenère"""
     encrypted_text = []
@@ -30,19 +31,18 @@ def vigenere_decrypt(ciphertext, key):
     return ''.join(decrypted_text)
 
 
-def encrypt_dict(data, key):
-    """Chiffre un dictionnaire entier et l'encode en Base64"""
-    data_str = json.dumps(data)  # Convertir en JSON
-    encrypted_text = vigenere_encrypt(data_str, key)  # Chiffrer
+def encrypt_text(text, key):
+    """Chiffre une chaîne de texte et l'encode en Base64"""
+    encrypted_text = vigenere_encrypt(text, key)  # Chiffrer
     return base64.b64encode(encrypted_text.encode()).decode()  # Convertir en Base64
 
 
-def decrypt_dict(encrypted_data, key):
-    """Déchiffre un dictionnaire en le décodant d'abord en Base64"""
+def decrypt_text(encrypted_data, key):
+    """Déchiffre une chaîne de texte encodée en Base64"""
     try:
         encrypted_data = base64.b64decode(encrypted_data).decode()  # Décoder Base64
-        decrypted_str = vigenere_decrypt(encrypted_data, key)  # Déchiffrer
-        return json.loads(decrypted_str)  # Convertir en JSON
-    except (json.JSONDecodeError, UnicodeDecodeError):
-        print("Erreur de décodage JSON après déchiffrement")
-        return {}
+        return vigenere_decrypt(encrypted_data, key)  # Déchiffrer
+    except (UnicodeDecodeError, binascii.Error):
+        print("Erreur de décodage")
+        return ""
+

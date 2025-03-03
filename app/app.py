@@ -31,6 +31,7 @@ def handle_message_prive(data):
     sender = data["expediteur"]
     recipient = data["destinataire"]
     message = chiffrement.encrypt_dict({"message": data["message"]}, "clé")  # Chiffrer le message
+    print("message", message)
 
     if recipient in clients:
         emit("message_recu", {"expediteur": sender, "message": message}, room=clients[recipient])

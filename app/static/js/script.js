@@ -33,10 +33,34 @@ function sendMessage() {
     socket.emit("message_prive", { expediteur: "Moi", destinataire: recipient, message });
 }
 
+// Fonction de déchiffrement Vigenère
+function vigenereDecrypt(ciphertext, key) {
+    let decryptedText = [];
+    let keyLength = key.length;
+    let keyAsInt = [...key].map(char => char.charCodeAt(0));
+    let ciphertextInt = [...ciphertext].map(char => char.charCodeAt(0));
+
+    for (let i = 0; i < ciphertextInt.length; i++) {
+        let value = (ciphertextInt[i] - keyAsInt[i % keyLength] + 128) % 128; // Déchiffrement avec Vigenère
+        decryptedText.push(String.fromCharCode(value));
+    }
+    return decryptedText.join('');
+}
+
+// Fonction pour décoder base64 et déchiffrer
+function base64DecodeAndDecrypt(base64Data, key) {
+    let decodedData = atob(base64Data);  // Décoder base64
+    return vigenereDecrypt(decodedData, key);  // Déchiffrer avec Vigenère
+}
+
 // Réception de messages
 socket.on("message_recu", (data) => {
+    let decryptedMessage = base64DecodeAndDecrypt(data.message, "clé");
+    console.log("Message reçu (Base64):", data.message);
+    console.log("Message déchiffré:", decryptedMessage);
+
     let msgList = document.getElementById("messages");
     let li = document.createElement("li");
-    li.innerText = `${data.expediteur}: ${data.message}`;
+    li.innerText = `${data.expediteur}: ${decryptedMessage}`;
     msgList.appendChild(li);
 });
