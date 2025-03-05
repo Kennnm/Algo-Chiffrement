@@ -34,8 +34,13 @@
             display: flex;
             flex-direction: column;
         }
-        .chat h1 {
-            margin-bottom: 20px;
+        .messages {
+            flex-grow: 1;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 20px;
         }
         .login-form, .message-form {
             display: flex;
@@ -54,19 +59,6 @@
             background-color: #007bff;
             color: #fff;
             cursor: pointer;
-        }
-        .login-form button:hover, .message-form button:hover {
-            background-color: #0056b3;
-        }
-        .user-list, .messages {
-            margin-top: 20px;
-        }
-        .messages {
-            flex-grow: 1;
-            overflow-y: auto;
-            border: 1px solid #ccc;
-            padding: 10px;
-            border-radius: 4px;
         }
     </style>
 </head>
@@ -113,9 +105,16 @@
         });
 
         socket.on('message_recu', (data) => {
+            console.log("Message reçu", data.message); 
+
+            const decryptedMessage = decryptMessage(data.message, "clé"); // Déchiffrer le message
+            
+            console.log("Message déchiffré :", decryptedMessage); // Vérifier le résultat après déchiffrement
+            
             const messages = document.getElementById('messages');
             const li = document.createElement('li');
-            li.textContent = `${data.expediteur}: ${data.message}`;
+
+            li.textContent = `${data.expediteur}: ${decryptedMessage}`;
             messages.appendChild(li);
         });
 
@@ -125,17 +124,71 @@
 
         function login() {
             const username = document.getElementById('username').value;
-            socket.emit('login', { username });
-            document.querySelector('.login-form').style.display = 'none';
-            document.querySelector('.message-form').style.display = 'block';
+            if (username.trim() !== '') {
+                socket.emit('login', { username });
+                document.querySelector('.login-form').style.display = 'none';
+                document.querySelector('.message-form').style.display = 'block';
+            }
         }
 
         function sendMessage() {
             const recipient = document.getElementById('recipient').value;
             const message = document.getElementById('message').value;
             const sender = document.getElementById('username').value;
-            socket.emit('message_prive', { expediteur: sender, destinataire: recipient, message });
+            if (recipient.trim() !== '' && message.trim() !== '') {
+                socket.emit('message_prive', { expediteur: sender, destinataire: recipient, message });
+            }
         }
+
+        function base64Decode(str) {
+            return atob(str); // Décodage Base64
+        }
+        
+        function base64ToUtf8(base64) {
+            return decodeURIComponent(escape(atob(base64)));
+        }
+        
+        function utf8ToBase64(text) {
+            return btoa(unescape(encodeURIComponent(text)));
+        }
+        
+        function vigenereDecrypt(ciphertext, key) {
+            try {
+                // 🔥 Étape 1 : Décoder Base64 → Texte UTF-8 correct
+                let decodedText = base64ToUtf8(ciphertext);
+        
+                // 🔥 Étape 2 : Déchiffrement Vigenère
+                let decryptedText = [];
+                key = key.normalize("NFKC"); // Normalisation Unicode pour éviter les erreurs
+                let keyLength = key.length;
+        
+                for (let i = 0; i < decodedText.length; i++) {
+                    let charCode = (decodedText.charCodeAt(i) - key.charCodeAt(i % keyLength) + 256) % 256;
+                    decryptedText.push(String.fromCharCode(charCode));
+                }
+        
+                return decryptedText.join("");
+            } catch (error) {
+                console.error("❌ Erreur lors du déchiffrement :", error);
+                return "Erreur de déchiffrement";
+            }
+        }
+        
+        
+        
+        
+        function decryptMessage(encryptedMessage, key) {
+            try {
+                console.log("🔍 Message chiffré reçu :", encryptedMessage);
+                let decryptedText = vigenereDecrypt(encryptedMessage, key);
+                console.log("✅ Message déchiffré :", decryptedText);
+                return decryptedText;
+            } catch (error) {
+                console.error("❌ Erreur lors du déchiffrement:", error);
+                return "Erreur lors du déchiffrement";
+            }
+        }
+        
     </script>
 </body>
 </html>

@@ -1,48 +1,32 @@
-import json
 import base64
 
-
-
 def vigenere_encrypt(plaintext, key):
-    """Chiffre une chaîne de caractères avec Vigenère"""
     encrypted_text = []
     key_length = len(key)
-    key_as_int = [ord(i) for i in key]
-    plaintext_int = [ord(i) for i in plaintext]
-    
-    for i in range(len(plaintext_int)):
-        value = (plaintext_int[i] + key_as_int[i % key_length]) % 128  # Utilisation de 128 pour ASCII complet
-        encrypted_text.append(chr(value))
-    
-    return ''.join(encrypted_text)
 
+    for i, char in enumerate(plaintext):
+        char_code = (ord(char) + ord(key[i % key_length])) % 256
+        encrypted_text.append(chr(char_code))
+
+    encrypted_bytes = ''.join(encrypted_text).encode("utf-8")
+    encrypted_base64 = base64.b64encode(encrypted_bytes).decode("utf-8")
+    return encrypted_base64
 
 def vigenere_decrypt(ciphertext, key):
-    """Déchiffre une chaîne de caractères chiffrée avec Vigenère"""
     decrypted_text = []
     key_length = len(key)
-    key_as_int = [ord(i) for i in key]
-    ciphertext_int = [ord(i) for i in ciphertext]
-    
-    for i in range(len(ciphertext_int)):
-        value = (ciphertext_int[i] - key_as_int[i % key_length]) % 128  # Déchiffrement avec modulo 128
-        decrypted_text.append(chr(value))
-    
+
+    decoded_bytes = base64.b64decode(ciphertext)
+    decoded_text = decoded_bytes.decode("utf-8")
+
+    for i, char in enumerate(decoded_text):
+        char_code = (ord(char) - ord(key[i % key_length]) + 256) % 256
+        decrypted_text.append(chr(char_code))
+
     return ''.join(decrypted_text)
 
+def encrypt_text(texte, cle):
+    return vigenere_encrypt(texte, cle)
 
-def encrypt_text(text, key):
-    """Chiffre une chaîne de texte et l'encode en Base64"""
-    encrypted_text = vigenere_encrypt(text, key)  # Chiffrer
-    return base64.b64encode(encrypted_text.encode()).decode()  # Convertir en Base64
-
-
-def decrypt_text(encrypted_data, key):
-    """Déchiffre une chaîne de texte encodée en Base64"""
-    try:
-        encrypted_data = base64.b64decode(encrypted_data).decode()  # Décoder Base64
-        return vigenere_decrypt(encrypted_data, key)  # Déchiffrer
-    except (UnicodeDecodeError, binascii.Error):
-        print("Erreur de décodage")
-        return ""
-
+def decrypt_text(texte_chiffre, cle):
+    return vigenere_decrypt(texte_chiffre, cle)
