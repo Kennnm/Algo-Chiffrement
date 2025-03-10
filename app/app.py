@@ -20,27 +20,31 @@ def handle_connect():
 def handle_login(data):
     try:
         # 🔓 Déchiffrer les données du login
-        decrypted_json = chiffrement.vigenere_decrypt(data["encrypted_data"], "cle")
-        login_data = json.loads(decrypted_json)
+        decrypted_json = chiffrement.aes_decrypt(data["encrypted_data"])
+        login_data = json.loads(decrypted_json)  # ✅ login_data est un dictionnaire
 
-        if isinstance(login_data, list) and len(login_data) == 2 and login_data[0] == "login":
-            user_info = login_data[1]
-            username = user_info.get("username")
+        # ✅ Vérifier que la structure correspond bien à ce que le client envoie
+        if isinstance(login_data, dict) and "type" in login_data and "data" in login_data:
+            if login_data["type"] == "login":
+                username = login_data["data"].get("username")
 
-            if username:
-                clients[username] = request.sid
-                print(f"{username} s'est connecté")
+                if username:
+                    clients[username] = request.sid
+                    print(f"{username} s'est connecté")
 
-                # 🔹 Chiffrer la liste des utilisateurs avant envoi
-                encrypted_users = chiffrement.vigenere_encrypt(json.dumps(list(clients.keys())), "cle")
-                emit("liste_utilisateurs", {"encrypted_data": encrypted_users}, broadcast=True)
+                    # 🔹 Chiffrer la liste des utilisateurs avant envoi
+                    encrypted_users = chiffrement.aes_encrypt(json.dumps(list(clients.keys())))
+                    emit("liste_utilisateurs", {"encrypted_data": encrypted_users}, broadcast=True)
+                else:
+                    print("❌ Erreur : 'username' est manquant !")
             else:
-                print("❌ Erreur : 'username' est manquant !")
+                print("❌ Type de requête inconnu :", login_data["type"])
         else:
             print("❌ Format JSON incorrect :", login_data)
 
     except Exception as e:
         print("❌ Erreur lors du traitement du login :", e)
+
 
 
 
@@ -50,7 +54,7 @@ def handle_message_prive(data):
     try:
         
         # 🔹 Déchiffrement du message reçu
-        decrypted_data = chiffrement.vigenere_decrypt(data["data"], "cle")
+        decrypted_data = chiffrement.aes_decrypt(data["data"])
         message_obj = json.loads(decrypted_data)  # Transformer en JSON
         
         if message_obj["type"] == "message_prive":      
@@ -60,8 +64,8 @@ def handle_message_prive(data):
 
             print(f"📩 Message reçu de {sender} pour {recipient}: {message_chiffre}")
             
-            encrypted_message = chiffrement.vigenere_encrypt(message_chiffre, "cle")  # Chiffrer le message avant envoi
-            encrypted_sender = chiffrement.vigenere_encrypt(sender, "cle")  # Chiffrer l'expéditeur avant envoi
+            encrypted_message = chiffrement.aes_encrypt(message_chiffre)  # Chiffrer le message avant envoi
+            encrypted_sender = chiffrement.aes_encrypt(sender)  # Chiffrer l'expéditeur avant envoi
 
             if recipient in clients:
                 emit("message_recu", {"data": encrypted_message, "sender": encrypted_sender}, room=clients[recipient])
@@ -83,7 +87,10 @@ def handle_disconnect():
     if user:
         del clients[user[0]]
         print(f"{user[0]} s'est déconnecté")
-        encrypted_users = chiffrement.vigenere_encrypt(json.dumps(list(clients.keys())), "cle")
+
+        # Chiffrement AES de la liste des utilisateurs restants
+        encrypted_users = chiffrement.aes_encrypt(json.dumps(list(clients.keys())))
+
         emit("liste_utilisateurs", {"encrypted_data": encrypted_users}, broadcast=True)
 
 
