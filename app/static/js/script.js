@@ -4,6 +4,16 @@ socket.on('connect', () => {
     console.log('Connecté au serveur');
 });
 
+let public_key = "";  // Variable globale pour stocker la clé publique
+
+socket.emit("get_public_key"); // Demande la clé publique lors de la connexion
+
+socket.on("public_key", function(key) {
+    public_key = key; // Stocker la clé publique reçue
+    console.log("🔑 Clé publique reçue :", public_key);
+});
+
+
 socket.on("liste_utilisateurs", (data) => {
     try {
         let decryptedUsersJson = aesDecrypt(data.encrypted_data);
@@ -101,9 +111,7 @@ function login() {
     }
 }
 
-
-
-
+// Fonction pour envoyer un message
 function sendMessage() {
     const recipient = document.getElementById('recipient').value;
     const message = document.getElementById('message').value;
@@ -130,7 +138,28 @@ function sendMessage() {
         // 🔹 Vider la zone de texte après l'envoi
         document.getElementById('message').value = "";
     }
-}       
+} 
+
+// Fonction de chiffrement RSA
+function rsaEncrypt(message) {
+    // Utiliser une bibliothèque comme JSEncrypt pour chiffrer avec la clé publique RSA
+    const encrypt = new JSEncrypt();
+    
+    // La clé publique RSA devrait être récupérée depuis le serveur et définie ici
+    encrypt.setPublicKey(publicKey);  // publicKey doit être définie dans le script côté client
+    
+    // Retourne le message chiffré en base64
+    return encrypt.encrypt(message);
+}
+
+// Exemple de clé publique RSA (à récupérer depuis le serveur au début de la session)
+let publicKey = "";  // Cette clé publique sera mise à jour après réception du serveur
+
+// Exemple de fonction pour récupérer la clé publique du serveur lors de la connexion initiale
+socket.on('public_key', function(key) {
+    publicKey = key;
+});
+      
 
 
 function shouldScrollToBottom() {
@@ -161,7 +190,7 @@ function afficherMessage(expediteur, message, type) {
 
 
 
-const SECRET_KEY = "0123456789abcdef"; // Clé 16 caractères (128 bits)
+const SECRET_KEY = "0123456789abcdef0123456789abcdef"; // 32 caractères (256 bits)
 
 function aesEncrypt(plaintext) {
     let key = CryptoJS.enc.Utf8.parse(SECRET_KEY);
@@ -189,21 +218,27 @@ function aesEncrypt(plaintext) {
 
 function aesDecrypt(ciphertext) {
     try {
-        let parsedData = JSON.parse(ciphertext); // ✅ Assurez-vous que c'est un JSON
+        let parsedData = JSON.parse(ciphertext);  // ✅ Parse JSON d'abord
         let iv = CryptoJS.enc.Base64.parse(parsedData.iv);
-        let encryptedText = parsedData.data;
-
+        let encryptedBytes = CryptoJS.enc.Base64.parse(parsedData.data);
         let key = CryptoJS.enc.Utf8.parse(SECRET_KEY);
 
-        let decrypted = CryptoJS.AES.decrypt(encryptedText, key, {
-            iv: iv,
-            mode: CryptoJS.mode.CBC,
-            padding: CryptoJS.pad.Pkcs7
-        });
+        let decrypted = CryptoJS.AES.decrypt(
+            { ciphertext: encryptedBytes },  // ✅ Correct
+            key,
+            { iv: iv, mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 }
+        );
 
-        return decrypted.toString(CryptoJS.enc.Utf8);
+        let decryptedText = decrypted.toString(CryptoJS.enc.Utf8);  // ✅ Convertir en texte
+
+        if (!decryptedText) {
+            throw new Error("Le texte déchiffré est vide ou invalide.");
+        }
+
+        return decryptedText;
     } catch (error) {
         console.error("❌ Erreur de déchiffrement :", error);
         return null;
     }
 }
+

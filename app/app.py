@@ -18,6 +18,7 @@ def handle_connect():
 
 @socketio.on("login")
 def handle_login(data):
+    print("Données reçues :", request.data)
     try:
         # 🔓 Déchiffrer les données du login
         decrypted_json = chiffrement.aes_decrypt(data["encrypted_data"])
@@ -46,38 +47,47 @@ def handle_login(data):
         print("❌ Erreur lors du traitement du login :", e)
 
 
+@socketio.on("get_public_key")
+def send_public_key():
+    """Envoie la clé publique RSA au client"""
+    try:
+        encrypted_key = chiffrement.public_key.export_key().decode()
+        emit("public_key", encrypted_key)
+    except Exception as e:
+        print("Erreur lors de l'envoi de la clé publique :", str(e))
 
 
 @socketio.on("message_chiffre")
 def handle_message_prive(data):
-    """Transmet un message privé sans le modifier"""
+    """Transmet un message privé chiffré avec AES"""
     try:
-        
-        # 🔹 Déchiffrement du message reçu
-        decrypted_data = chiffrement.aes_decrypt(data["data"])
+        decrypted_data = chiffrement.aes_decrypt(data["data"])  # Déchiffrer le message
         message_obj = json.loads(decrypted_data)  # Transformer en JSON
         
         if message_obj["type"] == "message_prive":      
             sender = message_obj["expediteur"]
             recipient = message_obj["destinataire"]
-            message_chiffre = message_obj["message"]
+            message_clair = message_obj["message"]
 
-            print(f"📩 Message reçu de {sender} pour {recipient}: {message_chiffre}")
+            print(f"📩 Message reçu de {sender} pour {recipient}: {message_clair}")
             
-            encrypted_message = chiffrement.aes_encrypt(message_chiffre)  # Chiffrer le message avant envoi
-            encrypted_sender = chiffrement.aes_encrypt(sender)  # Chiffrer l'expéditeur avant envoi
+            # Chiffrement du message avec AES au lieu de RSA
+            encrypted_message = chiffrement.aes_encrypt(message_clair)
 
+            # Si le destinataire est connecté, envoyer le message chiffré avec AES
             if recipient in clients:
+                encrypted_sender = chiffrement.aes_encrypt(sender)  # Chiffrer l'expéditeur
                 emit("message_recu", {"data": encrypted_message, "sender": encrypted_sender}, room=clients[recipient])
             else:
                 emit("erreur", {"message": "Utilisateur non trouvé"}, room=clients[sender])
         else:
-                print("Type de message inconnu :", message_obj["type"])
-                emit("erreur", {"message": "Type de message invalide"}, room=clients[sender])
+            print("Type de message inconnu :", message_obj["type"])
+            emit("erreur", {"message": "Type de message invalide"}, room=clients[sender])
                 
     except Exception as e:
         print("Erreur de déchiffrement :", str(e))
         emit("erreur", {"message": "Déchiffrement impossible"}, room=clients[sender])
+
     
 
 
