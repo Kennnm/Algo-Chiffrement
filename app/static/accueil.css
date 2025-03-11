@@ -55,8 +55,8 @@ body {
 }
 
 .sidebar ul li.selected {
-    background: #4e73df;  /* Change de couleur au clic */
-    color: #fff;  /* Met le texte en blanc pour qu'il soit lisible */
+    background: #4e73df;  
+    color: #fff;  
 }
 
 .chat {
@@ -150,21 +150,48 @@ body {
     background: #2e59d9;
 }
 
-
-
 .messages ul {
     list-style-type: none;
+    display: flex;
+    flex-direction: column;
 }
 
-.messages ul li {
-    padding: 10px;
+/* 🌟 Messages avec noms stylés */
+.message-container {
+    display: flex;
+    flex-direction: column;
+    max-width: 60%;
     margin-bottom: 10px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 5px;
+}
+
+.message-sender {
+    font-size: 0.9em;
+    font-weight: bold;
+    margin-bottom: 3px;
     color: #ddd;
 }
 
-/* Animation for new messages */
+/* 📩 Message reçu (destinataire) → À DROITE */
+.message-sent {
+    align-self: flex-end;
+    text-align: right;
+    background: rgba(78, 115, 223, 0.8);
+    color: #fff;
+    border-radius: 15px 15px 0 15px;
+    padding: 10px;
+}
+
+/* 📨 Message envoyé ("Moi") → À GAUCHE */
+.message-received {
+    align-self: flex-start;
+    text-align: left;
+    background: rgba(255, 255, 255, 0.2);
+    color: #ddd;
+    border-radius: 15px 15px 15px 0;
+    padding: 10px;
+}
+
+/* 🌟 Animation pour les nouveaux messages */
 @keyframes fadeIn {
     from {
         opacity: 0;
@@ -178,40 +205,15 @@ body {
     animation: fadeIn 0.5s ease-in;
 }
 
+/* 🌟 Les messages restent bien lisibles même avec de longs textes */
+.message-sent, .message-received {
+    word-wrap: break-word;  
+    max-width: 80%;
+    padding: 10px;
+}
+
 .sidebar ul li.selected {
-    background: #4e73df; /* Changement de couleur */
-    color: white; /* Texte blanc */
+    background: #4e73df; 
+    color: white; 
     font-weight: bold;
 }
-
-.message-sent {
-    text-align: right;
-    background: rgba(78, 115, 223, 0.8);
-    color: #fff;
-    border-radius: 15px 15px 0 15px;
-    padding: 10px;
-    margin-bottom: 10px;
-    max-width: 60%;
-    align-self: flex-end;
-}
-
-.message-received {
-    text-align: left;
-    background: rgba(255, 255, 255, 0.2);
-    color: #ddd;
-    border-radius: 15px 15px 15px 0;
-    padding: 10px;
-    margin-bottom: 10px;
-    max-width: 60%;
-    align-self: flex-start;
-}
-
-.messages ul {
-    display: flex;
-    flex-direction: column;
-}        
-
-.message-sent, .message-received {
-    word-wrap: break-word;  /* 🚀 Casse les longues phrases */
-    max-width: 80%;  /* Empêche les messages trop longs */
-} 
