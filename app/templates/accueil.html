@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat Privé</title>
     <link rel="stylesheet" href="../static/accueil.css"/>
-
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 </head>
 <body>
     <div class="container">
@@ -14,21 +14,32 @@
             <ul id="user-list"></ul>
         </div>
         <div class="chat">
-            <h1>Chat Privé</h1>
+            <h1 id="chat-title"></h1>
+            
+            <div class="quit-chat">
+                <button onclick="quitConversation()">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+            </div>
+
             <div class="login-form">
                 <input type="text" id="username" placeholder="Nom d'utilisateur" autofocus>
                 <button onclick="login()">Se connecter</button>
             </div>
-            <div class="message-form" style="display: none;">
-                <input type="hidden" id="recipient">
-                <textarea id="message" placeholder="Votre message" rows="4"></textarea>
-                <button onclick="sendMessage()">Envoyer</button>
-            </div>
+        
             <div class="messages">
-                <h3>Messages</h3>
                 <ul id="messages"></ul>
             </div>
+        
+            <div class="message-form">
+                <input type="hidden" id="recipient">
+                <textarea id="message" placeholder="Votre message" rows="1"></textarea>
+                <button onclick="sendMessage()">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
         </div>
+        
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>   
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>

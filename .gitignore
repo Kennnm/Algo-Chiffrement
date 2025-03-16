@@ -13,3 +13,8 @@ node_modules/
 .venv/
 .env
 config/*.json
+
+# Ignorer la base de données SQLite et le dossier instance
+instance/
+*.sqlite3
+*.db

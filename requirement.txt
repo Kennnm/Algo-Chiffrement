@@ -1,3 +1,0 @@
-Flask
-Flask-SocketIO
-eventlet  # Permet d'utiliser WebSockets avec Flask
